@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+import sys
+import requests
+import textwrap
+from bs4 import BeautifulSoup
+from termcolor import colored, cprint
+
+BASE_URL = 'https://aur.archlinux.org/packages/'
+
+class Comment(object):
+    def __init__(self,author,timestamp,content):
+        self.author = author
+        self.timestamp = timestamp
+        self.content = content
+
+
+def fetch_comments(package):
+    res = requests.get(BASE_URL+package,verify=True)
+    if res.status_code != 200:
+        raise Exception('couldn\'t fetch info for "{0}" response "{1}"'
+                        .format(package,res.status_code))
+    soup = BeautifulSoup(res.content)
+    news = soup.find('div',attrs={'id':'news'})
+    authors = news.findAll('h4')
+    timestamps = news.findAll('p',attrs={'class':'timestamp'})
+    contents = news.findAll('div',attrs={'class':'article-content'})
+    comments = []
+    for author,timestamp,content in zip(authors,timestamps,contents):
+        comments.append(Comment(
+            author.text.strip(),
+            timestamp.text.strip(),
+            content.text.strip()))
+    return comments
+
+
+def main(argv=None):
+    if not argv:
+        argv = sys.argv[1]
+    comments = fetch_comments(argv)
+    for comment in comments:
+        cprint('{0}: {1}'.format(comment.timestamp,comment.author),'blue')
+        cprint(textwrap.fill(comment.content,initial_indent='  ',
+                             subsequent_indent='  '))
+
+if __name__ == '__main__':
+    main()
