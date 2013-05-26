@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+import AUR
 import sys
 import requests
 import textwrap
+import argparse
 from bs4 import BeautifulSoup
 from termcolor import colored, cprint
 
@@ -14,33 +16,81 @@ class Comment(object):
         self.content = content
 
 
-def fetch_comments(package):
-    res = requests.get(BASE_URL+package,verify=True)
+def query(package):
+    query = AUR.RPC.aur_query('search',package)[0]
+    if len(query) == 0:
+        raise Exception('couldn\'t find any package with name "{0}"'
+                        .format(package))
+    elif len(query) > 1:
+        # test if the exact name is under the found then we won't ask
+        if package in [x['Name'] for x in query]:
+            return package
+        for i in range(len(query)):
+            cprint('{0}: {1} {2}'
+                  .format(i,query[i]['Name'],
+                          query[i]['Version']),'yellow')
+            print('\t{0}'.format(query[i]['Description']))
+        number = int(input('\nspecify which package you mean:\t'))
+        return query[number]['Name']
+    else:
+        return package
+
+def get(package):
+    res = requests.get(BASE_URL+package+'/?comments=all',verify=True)
     if res.status_code != 200:
-        raise Exception('couldn\'t fetch info for "{0}" response "{1}"'
-                        .format(package,res.status_code))
+        res = requests.get(BASE_URL+query(package)+'/?comments=all',verify=True)
+        if res.status_code != 200:
+            raise Exception('couldn\'t fetch comments for package "{0}"'
+                            .format(package))
+    return res
+
+def fetch_comments(package,number=5,get_all=False):
+    res = get(package)
     soup = BeautifulSoup(res.content)
     news = soup.find('div',attrs={'id':'news'})
+    if not news:
+        return package,[]
     authors = news.findAll('h4')
     timestamps = news.findAll('p',attrs={'class':'timestamp'})
     contents = news.findAll('div',attrs={'class':'article-content'})
     comments = []
+    i = 0
     for author,timestamp,content in zip(authors,timestamps,contents):
-        comments.append(Comment(
-            author.text.strip(),
-            timestamp.text.strip(),
-            content.text.strip()))
-    return comments
+        if number and i == number:
+            return package,comments
+        comments.append(Comment(author.text.strip(),
+            timestamp.text.strip(),content.text.strip()))
+        i += 1
+
+    return package,comments
 
 
 def main(argv=None):
     if not argv:
-        argv = sys.argv[1]
-    comments = fetch_comments(argv)
+        argv = sys.argv[1:]
+
+    parser = argparse.ArgumentParser('aur-comment-fetch')
+    parser.add_argument('package', help='name of the package')
+    parser.add_argument('-a','--all',action='store_true',
+                        help='fetch all comments')
+    parser.add_argument('-n',type=int,default=5,
+                        help='specify number of most recents comments to fetch')
+
+    args = parser.parse_args(argv)
+    package,comments = fetch_comments(args.package,number=args.n,get_all=args.all)
+    if len(comments) == 0:
+        cprint('\nno comments available for package "{0}"\n'
+               .format(package),'red')
+        return
+    else:
+        cprint('\nLast {1} comments for package "{0}":\n'
+               .format(package,args.n),'magenta')
     for comment in comments:
-        cprint('{0}: {1}'.format(comment.timestamp,comment.author),'blue')
+        cprint('{0}: {1}'.format(comment.timestamp,comment.author),'yellow')
         cprint(textwrap.fill(comment.content,initial_indent='  ',
                              subsequent_indent='  '))
+
+    print('\n')
 
 if __name__ == '__main__':
     main()
