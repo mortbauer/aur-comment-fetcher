@@ -83,8 +83,8 @@ def main(argv=None):
                .format(package),'red')
         return
     else:
-        cprint('\nLast {1} comments for package "{0}":\n'
-               .format(package,args.n),'magenta')
+        cprint('\nLast {1} comments for package "{0}":\n full info at {2}\n'
+               .format(package,args.n,BASE_URL+package),'magenta')
     for comment in comments:
         cprint('{0}: {1}'.format(comment.timestamp,comment.author),'yellow')
         cprint(textwrap.fill(comment.content,initial_indent='  ',
