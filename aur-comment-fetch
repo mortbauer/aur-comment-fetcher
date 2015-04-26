@@ -79,8 +79,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     package,comments = fetch_comments(args.package,number=args.n,get_all=args.all)
     if len(comments) == 0:
-        cprint('\nno comments available for package "{0}"\n'
-               .format(package),'red')
+        cprint('\nno comments available for package "{0}"\n full info at {1}\n'
+               .format(package,BASE_URL+package),'red')
         return
     else:
         cprint('\nLast {1} comments for package "{0}":\n full info at {2}\n'
