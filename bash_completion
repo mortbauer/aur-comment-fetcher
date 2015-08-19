@@ -1,0 +1,23 @@
+# aur-comment-fetch bash completion
+
+_aur-comment-fetch_pkg()
+{
+	\pacman -Qq 2>/dev/null
+	\awk '/\[ALPM\].removed/ {print $5}' /var/log/pacman.log 2>/dev/null
+}
+
+_aur-comment-fetch() 
+{
+	local cur prev words cword
+	_init_completion || return
+
+	case $prev in
+		-h|--help)
+			return
+			;;
+	esac
+
+	COMPREPLY=( $(compgen -W '--help --all -n $( _aur-comment-fetch_pkg )' -- "${cur}") )
+}
+
+complete -F _aur-comment-fetch aur-comment-fetch
