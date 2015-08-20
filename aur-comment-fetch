@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 import AUR
-import sys
+import click
 import requests
 import textwrap
-import argparse
 from bs4 import BeautifulSoup
-from termcolor import colored, cprint
 
 BASE_URL = 'https://aur.archlinux.org/packages/'
 
@@ -25,12 +23,11 @@ def query(package):
         # test if the exact name is under the found then we won't ask
         if package in [x['Name'] for x in query]:
             return package
-        for i in range(len(query)):
-            cprint('{0}: {1} {2}'
-                  .format(i,query[i]['Name'],
-                          query[i]['Version']),'yellow')
-            print('\t{0}'.format(query[i]['Description']))
-        number = int(input('\nspecify which package you mean:\t'))
+        for i,x in enumerate(query):
+            print('\033[33m\033[1m{0}\033[0m: \033[33m{1} \033[32m{2}'
+                  .format(i,x['Name'],x['Version']))
+            print('\t\033[0m{0}'.format(x['Description']))
+        number = click.prompt('\nspecify the number of the package', type=int)
         return query[number]['Name']
     else:
         return package
@@ -65,32 +62,30 @@ def fetch_comments(package,number=5,get_all=False):
     return package,comments
 
 
-def main(argv=None):
-    if not argv:
-        argv = sys.argv[1:]
-
-    parser = argparse.ArgumentParser('aur-comment-fetch')
-    parser.add_argument('package', help='name of the package')
-    parser.add_argument('-a','--all',action='store_true',
-                        help='fetch all comments')
-    parser.add_argument('-n',type=int,default=5,
-                        help='specify number of most recents comments to fetch')
-
-    args = parser.parse_args(argv)
-    package,comments = fetch_comments(args.package,number=args.n,get_all=args.all)
-    if len(comments) == 0:
-        cprint('\nno comments available for package "{0}"\n full info at {1}\n'
-               .format(package,BASE_URL+package),'red')
-        return
+@click.command()
+@click.argument('package')
+@click.option('-a','--all','get_all',is_flag=True,help='fetch all comments')
+@click.option('-n','--number',type=int,default=5,help='specify number of comments to fetch')
+@click.option('-s','--search',is_flag=True,help='search for package')
+def main(package,get_all,number,search):
+    if search:
+        print('search')
+        res = AUR.RPC.aur_query('search',package)[0]
+        for x in res:
+            print(x['Name'])
     else:
-        cprint('\nLast {1} comments for package "{0}":\n full info at {2}\n'
-               .format(package,args.n,BASE_URL+package),'magenta')
-    for comment in comments:
-        cprint('{0}: {1}'.format(comment.timestamp,comment.author),'yellow')
-        cprint(textwrap.fill(comment.content,initial_indent='  ',
-                             subsequent_indent='  '))
+        package,comments = fetch_comments(package,number=number,get_all=get_all)
+        if len(comments) == 0:
+            print('\033[31m\nno comments available for package "{0}"\n full info at {1}\n\033[0m'
+                .format(package,BASE_URL+package))
+            return
+        else:
+            print('\033[35m\nLast {1} comments for package "{0}":\n full info at {2}\n\033[0m'
+                .format(package,number,BASE_URL+package))
+        for comment in comments:
+            print('\033[33m{0}: {1}\033[0m'.format(comment.timestamp,comment.author))
+            print(textwrap.fill(comment.content,initial_indent='  ',subsequent_indent='  '))
 
-    print('\n')
 
 if __name__ == '__main__':
     main()

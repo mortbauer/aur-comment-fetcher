@@ -23,8 +23,9 @@ which will result in a nicely formatted::
 
 Requirements:
 
+    python-click
     python-requests
-    python-termcolor
     python-beautifulsoup4
     python3-aur
+
 
