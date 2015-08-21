@@ -21,7 +21,7 @@ _aur-comment-fetch()
 			;;
 	esac
 
-	COMPREPLY=( $(compgen -W '--help --all -n $(_aur-comment-fetch_pkg "${cur}" 2>/dev/null)' -- "${cur}") )
+	COMPREPLY=( $(compgen -W "--help --all -n $(_aur-comment-fetch_pkg ${cur} 2>/dev/null)" -- "${cur}") )
 }
 
 complete -F _aur-comment-fetch aur-comment-fetch
