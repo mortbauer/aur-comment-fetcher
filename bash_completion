@@ -2,8 +2,12 @@
 
 _aur-comment-fetch_pkg()
 {
-	\pacman -Qq 2>/dev/null
-	\awk '/\[ALPM\].removed/ {print $5}' /var/log/pacman.log 2>/dev/null
+python << EOF
+import AUR
+for x in AUR.RPC.aur_query("search","$1")[0]:
+    print(x["Name"])
+EOF
+
 }
 
 _aur-comment-fetch() 
@@ -17,7 +21,9 @@ _aur-comment-fetch()
 			;;
 	esac
 
-	COMPREPLY=( $(compgen -W '--help --all -n $(aur-comment-fetch -s -- "${cur}" 2>/dev/null)' -- "${cur}") )
+	COMPREPLY=( $(compgen -W '--help --all -n $(_aur-comment-fetch_pkg "${cur}" 2>/dev/null)' -- "${cur}") )
 }
 
 complete -F _aur-comment-fetch aur-comment-fetch
+
+#  vim: set ft=sh ts=4 sw=4 tw=0 :
