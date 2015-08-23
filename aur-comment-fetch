@@ -65,7 +65,8 @@ def fetch_comments(package,number=5,get_all=False):
 @click.argument('package')
 @click.option('-a','--all','get_all',is_flag=True,help='fetch all comments')
 @click.option('-n','--number',type=int,default=5,help='specify number of comments to fetch')
-def main(package,get_all,number):
+@click.option('-r','--reverse','reverse_order',is_flag=True,help='show comments in reversed order')
+def main(package,get_all,number,reverse_order):
     package,comments = fetch_comments(package,number=number,get_all=get_all)
     if len(comments) == 0:
         print('\033[31m\nno comments available for package "{0}"\n full info at {1}\n\033[0m'
@@ -74,7 +75,7 @@ def main(package,get_all,number):
     else:
         print('\033[35m\nLast {1} comments for package "{0}":\n full info at {2}\n\033[0m'
             .format(package,number,BASE_URL+package))
-    for comment in comments:
+    for comment in (reversed(comments) if reverse_order else comments):
         print('\033[33m{0}: {1}\033[0m'.format(comment.timestamp,comment.author))
         print(textwrap.fill(comment.content,initial_indent='  ',subsequent_indent='  '))
 
