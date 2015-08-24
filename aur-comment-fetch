@@ -53,7 +53,7 @@ def fetch_comments(package,number=5,get_all=False):
     comments = []
     i = 0
     for author,timestamp,content in zip(authors,timestamps,contents):
-        if number and i == number:
+        if not get_all and i >= number:
             return package,comments
         comments.append(Comment(author.text.strip(),
             timestamp.text.strip(),content.text.strip()))
@@ -73,8 +73,8 @@ def main(package,get_all,number,reverse_order):
             .format(package,BASE_URL+package))
         return
     else:
-        print('\033[35m\nLast {1} comments for package "{0}":\n full info at {2}\n\033[0m'
-            .format(package,number,BASE_URL+package))
+        print('\033[35m\nLast {1} comments for package "{0}"{3}:\n full info at {2}\n\033[0m'
+            .format(package,number,BASE_URL+package,' (most recent last)' if reverse_order else ''))
     for comment in (reversed(comments) if reverse_order else comments):
         print('\033[33m{0}: {1}\033[0m'.format(comment.timestamp,comment.author))
         print(textwrap.fill(comment.content,initial_indent='  ',subsequent_indent='  '))
