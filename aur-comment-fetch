@@ -43,7 +43,7 @@ def get(package):
 
 def fetch_comments(package,number=5,get_all=False):
     res = get(package)
-    soup = BeautifulSoup(res.content)
+    soup = BeautifulSoup(res.content, 'lxml')
     news = soup.find('div',attrs={'id':'news'})
     if not news:
         return package,[]
