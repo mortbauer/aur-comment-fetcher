@@ -17,7 +17,7 @@ class Comment(object):
 def query(package):
     query = AUR.RPC.aur_query('search',package)[0]
     if len(query) == 0:
-        raise Exception('couldn\'t find any package with name "{0}"'
+        raise click.ClickException('couldn\'t find any package with name "{0}"'
                         .format(package))
     elif len(query) > 1:
         # test if the exact name is under the found then we won't ask
@@ -37,7 +37,7 @@ def get(package):
     if res.status_code != 200:
         res = requests.get(BASE_URL+query(package)+'/?comments=all',verify=True)
         if res.status_code != 200:
-            raise Exception('couldn\'t fetch comments for package "{0}"'
+            raise click.ClickException('couldn\'t fetch comments for package "{0}"'
                             .format(package))
     return res
 
