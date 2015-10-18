@@ -26,6 +26,7 @@ Requirements:
     python-click
     python-requests
     python-beautifulsoup4
+    python-lxml
     python3-aur
 
 
