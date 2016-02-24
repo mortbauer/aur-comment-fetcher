@@ -44,21 +44,21 @@ def get(package):
 def fetch_comments(package,number=5,get_all=False):
     res = get(package)
     soup = BeautifulSoup(res.content, 'lxml')
-    news = soup.find('div',attrs={'id':'news'})
-    if not news:
-        return package,[]
-    authors = news.findAll('h4')
-    timestamps = news.findAll('h4')
-    contents = news.findAll('div',attrs={'class':'article-content'})
+    allNews = soup.findAll('div',attrs={'id':'news'})
     comments = []
     i = 0
-    for author,timestamp,content in zip(authors,timestamps,contents):
-        if not get_all and i >= number:
-            return package,comments
-        comments.append(Comment(author.text.strip().split()[0],
-            " ".join(timestamp.text.strip().split()[3:5]),
-            content.text.strip()))
-        i += 1
+
+    for news in allNews:
+        authors = news.findAll('h4')
+        timestamps = news.findAll('h4')
+        contents = news.findAll('div',attrs={'class':'article-content'})
+        for author,timestamp,content in zip(authors,timestamps,contents):
+            if not get_all and i >= number:
+                return package,comments
+            comments.append(Comment(author.text.strip().split()[0],
+                " ".join(timestamp.text.strip().split()[3:5]),
+                content.text.strip()))
+            i += 1
 
     return package,comments
 
