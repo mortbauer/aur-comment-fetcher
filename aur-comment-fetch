@@ -8,10 +8,11 @@ from bs4 import BeautifulSoup
 BASE_URL = 'https://aur.archlinux.org/packages/'
 
 class Comment(object):
-    def __init__(self,author,timestamp,content):
+    def __init__(self,author,timestamp,content,pinned):
         self.author = author
         self.timestamp = timestamp
         self.content = content
+        self.pinned = pinned
 
 
 def query(package):
@@ -44,21 +45,23 @@ def get(package):
 def fetch_comments(package,number=5,get_all=False):
     res = get(package)
     soup = BeautifulSoup(res.content, 'lxml')
-    news = soup.find('div',attrs={'id':'news'})
-    if not news:
-        return package,[]
-    authors = news.findAll('h4')
-    timestamps = news.findAll('h4')
-    contents = news.findAll('div',attrs={'class':'article-content'})
+    allNews = soup.findAll('div',attrs={'id':'news'})
     comments = []
     i = 0
-    for author,timestamp,content in zip(authors,timestamps,contents):
-        if not get_all and i >= number:
-            return package,comments
-        comments.append(Comment(author.text.strip().split()[0],
-            " ".join(timestamp.text.strip().split()[3:5]),
-            content.text.strip()))
-        i += 1
+
+    for news in allNews:
+        is_pinned = news.find('a').text == "Pinned Comments"
+        authors = news.findAll('h4')
+        timestamps = news.findAll('h4')
+        contents = news.findAll('div',attrs={'class':'article-content'})
+        for author,timestamp,content in zip(authors,timestamps,contents):
+            if not get_all and i >= number:
+                return package,comments
+            comments.append(Comment(author.text.strip().split()[0],
+                " ".join(timestamp.text.strip().split()[3:5]),
+                content.text.strip(),
+                is_pinned))
+            i += 1
 
     return package,comments
 
@@ -77,8 +80,13 @@ def main(package,get_all,number,reverse_order):
         print('\033[35m\n{4} {1} comments for package "{0}"{3}:\n full info at {2}\n\033[0m'
             .format(package,len(comments),BASE_URL+package,' (most recent last)' if reverse_order else '','All' if get_all else 'Last'))
     for comment in (reversed(comments) if reverse_order else comments):
-        print('\033[33m{0}: Comment by {1}\033[0m'.format(comment.timestamp,comment.author))
+        if comment.pinned and reverse_order:
+            print()
+        print('\033[33m{0}:{2} Comment\033[33m by {1}\033[0m'
+            .format(comment.timestamp,comment.author,'\033[36m Pinned' if comment.pinned else ''))
         print(textwrap.fill(comment.content,initial_indent='  ',subsequent_indent='  '))
+        if comment.pinned and not reverse_order:
+            print()
 
 
 if __name__ == '__main__':
