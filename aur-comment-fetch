@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import AUR
+import AUR.RPC
 import click
 import requests
 import textwrap
@@ -15,23 +15,23 @@ class Comment(object):
         self.pinned = pinned
 
 
-def query(package):
-    query = AUR.RPC.aur_query('search',package)[0]
-    if len(query) == 0:
-        raise click.ClickException('couldn\'t find any package with name "{0}"'
-                        .format(package))
-    elif len(query) > 1:
+def query(name):
+    found = []
+    for i,result in enumerate(AUR.RPC.aur_query('search',name)):
         # test if the exact name is under the found then we won't ask
-        if package in [x['Name'] for x in query]:
-            return package
-        for i,x in enumerate(query):
+        if name == result['Name']:
+            return name
+        found.append(result)
+    if found:
+        for i,x in enumerate(found):
             print('\033[33m\033[1m{0}\033[0m: \033[33m{1} \033[32m{2}'
                   .format(i,x['Name'],x['Version']))
             print('\t\033[0m{0}'.format(x['Description']))
         number = click.prompt('\nspecify the number of the package', type=int)
-        return query[number]['Name']
+        return found[number]['Name']
     else:
-        return package
+        raise click.ClickException('couldn\'t find any package with name "{0}"'
+                        .format(package))
 
 def get(package):
     res = requests.get(BASE_URL+package+'/?comments=all',verify=True)
