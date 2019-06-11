@@ -31,7 +31,7 @@ def query(name):
         return found[number]['Name']
     else:
         raise click.ClickException('couldn\'t find any package with name "{0}"'
-                        .format(package))
+                        .format(name))
 
 def get(package):
     res = requests.get(BASE_URL+package+'/?comments=all',verify=True)
@@ -45,25 +45,22 @@ def get(package):
 def fetch_comments(package,number=5,get_all=False):
     res = get(package)
     soup = BeautifulSoup(res.content, 'lxml')
-    allNews = soup.findAll('div',attrs={'id':'news'})
-    comments = []
+    # find only next element 
+    current = soup.find('div',attrs={'class':'comments'}) 
+    results = []
     i = 0
-
-    for news in allNews:
-        is_pinned = news.find('a').text == "Pinned Comments"
-        authors = news.findAll('h4')
-        timestamps = news.findAll('h4')
-        contents = news.findAll('div',attrs={'class':'article-content'})
-        for author,timestamp,content in zip(authors,timestamps,contents):
-            if not get_all and i >= number:
-                return package,comments
-            comments.append(Comment(author.text.strip().split()[0],
-                " ".join(timestamp.text.strip().split()[3:5]),
-                content.text.strip(),
-                is_pinned))
-            i += 1
-
-    return package,comments
+    while i < number or get_all:
+        head = current.find_next(attrs={'class':'comment-header'})
+        if head is None: 
+            break
+        comment = current.find_next(attrs={'class':'article-content'})
+        is_pinned = comment.attrs['id'].startswith('pinned')
+        author = head.text.split('commented')[0].strip()
+        timestamp = head.find('a').text
+        results.append(Comment(author,timestamp,comment.text,is_pinned))
+        current = comment
+        i += 1
+    return package,results
 
 @click.command()
 @click.argument('package')
